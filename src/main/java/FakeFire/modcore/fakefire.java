@@ -1,45 +1,48 @@
-package MonsterModifier.modcore;
+package FakeFire.modcore;
 
 
-import MonsterModifier.Modifiers.HappyModifier;
-import MonsterModifier.Modifiers.MonsterModifierManager;
-import MonsterModifier.Modifiers.WeakModifier;
 import basemod.*;
 import basemod.interfaces.*;
 import com.badlogic.gdx.Gdx;
 import com.evacipated.cardcrawl.modthespire.lib.SpireConfig;
 import com.evacipated.cardcrawl.modthespire.lib.SpireInitializer;
 import com.google.gson.Gson;
+import com.megacrit.cardcrawl.core.CardCrawlGame;
 import com.megacrit.cardcrawl.core.Settings;
 import com.megacrit.cardcrawl.dungeons.AbstractDungeon;
 import com.megacrit.cardcrawl.localization.Keyword;
 import com.megacrit.cardcrawl.localization.RelicStrings;
 import com.megacrit.cardcrawl.localization.UIStrings;
-import com.megacrit.cardcrawl.monsters.AbstractMonster;
-import com.megacrit.cardcrawl.monsters.beyond.AwakenedOne;
 import com.megacrit.cardcrawl.rooms.AbstractRoom;
+import com.megacrit.cardcrawl.vfx.campfire.CampfireSleepEffect;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 
 
 import static com.megacrit.cardcrawl.core.Settings.language;
+import static com.megacrit.cardcrawl.core.Settings.seed;
 
 
 @SpireInitializer
-public class MonsterModifier implements PostInitializeSubscriber,EditKeywordsSubscriber,OnStartBattleSubscriber, PostBattleSubscriber,StartActSubscriber , EditStringsSubscriber, EditRelicsSubscriber,OnPlayerTurnStartSubscriber { // 实现接口
-    public MonsterModifier() {
+public class fakefire implements PostDungeonInitializeSubscriber,PostInitializeSubscriber,EditKeywordsSubscriber,OnStartBattleSubscriber, PostBattleSubscriber,StartActSubscriber , EditStringsSubscriber, EditRelicsSubscriber,OnPlayerTurnStartSubscriber { // 实现接口
+    public fakefire() {
         BaseMod.subscribe(this); // 告诉basemod你要订阅事件
     }
     public static int turn=0;
     public static final String MyModID = "Muban";
     ModPanel settingsPanel = new ModPanel();
     public static SpireConfig config;
+    public static boolean hasselected=false;
+    public static boolean isfakefire;
+    public static HashMap<Integer,Boolean> firemap=new HashMap<>();
+
     public static void initialize() throws IOException {
 
-        new MonsterModifier();
+        new fakefire();
 
-        config=new SpireConfig("MonsterModifier", "MonsterModifier");
+        config=new SpireConfig("FakeFire", "FakeFire");
         config.load();
 
     }
@@ -64,8 +67,8 @@ public class MonsterModifier implements PostInitializeSubscriber,EditKeywordsSub
         } else {
             lang = "ENG"; // 如果没有相应语言的版本，默认加载英语
         }
-   BaseMod.loadCustomStringsFile(RelicStrings.class, "StakeableResources/localization/" + lang + "/relics.json");
-        BaseMod.loadCustomStringsFile(UIStrings.class, "StakeableResources/localization/" + lang + "/ui.json");
+    BaseMod.loadCustomStringsFile(RelicStrings.class, "FakeFireResources/localization/" + lang + "/relics.json");
+        BaseMod.loadCustomStringsFile(UIStrings.class, "FakeFireResources/localization/" + lang + "/ui.json");
 
     }
     public static float getYPos(float y) {
@@ -83,24 +86,21 @@ public class MonsterModifier implements PostInitializeSubscriber,EditKeywordsSub
 
     @Override
     public void receiveOnBattleStart(AbstractRoom abstractRoom) {
-      turn=0;
-        for (AbstractMonster monster : AbstractDungeon.getMonsters().monsters) {
-            if (monster.isDying) {
-                continue;
-            }
-            /*
-            MonsterModifierManager.addModifier(monster, new WeakModifier());
-            MonsterModifierManager.addModifier(monster, new HappyModifier());*/
-        }
 
-        for (AbstractMonster monster : AbstractDungeon.getMonsters().monsters) {
-            if (monster.isDying) {
-                continue;
-            }
-            MonsterModifierManager.onBattleStart(monster);
-        }
     }
+   public static void initializeHashmap(){
+        if (AbstractDungeon.player==null|| !CardCrawlGame.isInARun()){
+            return;
+        }
+       com.megacrit.cardcrawl.random.Random rng=new com.megacrit.cardcrawl.random.Random(seed);
 
+        for(int i=0;i<1000;i++){
+            boolean istrue;
+            istrue=rng.randomBoolean(0.7f);
+firemap.put(i,istrue);
+
+        }
+   }
     @Override
     public void receiveEditKeywords() {
         Gson gson = new Gson();
@@ -109,26 +109,26 @@ public class MonsterModifier implements PostInitializeSubscriber,EditKeywordsSub
             lang = "ZHS";
         }
 
-        String json = Gdx.files.internal("StakeableResources/localization/" + lang + "/keywords.json")
+        String json = Gdx.files.internal("FakeFireResources/localization/" + lang + "/keywords.json")
                 .readString(String.valueOf(StandardCharsets.UTF_8));
         Keyword[] keywords = gson.fromJson(json, Keyword[].class);
-        /*
-        if (keywords != null) {
-            for (Keyword keyword : keywords) {
-                // 这个id要全小写
-                BaseMod.addKeyword("muban", keyword.NAMES[0], keyword.NAMES, keyword.DESCRIPTION);
-            }
-        }*/
+
     }
 
     @Override
     public void receiveOnPlayerTurnStart() {
-        turn++;
+
 
     }
 
     @Override
     public void receivePostBattle(AbstractRoom abstractRoom) {
 
+    }
+
+
+    @Override
+    public void receivePostDungeonInitialize() {
+        initializeHashmap();
     }
 }
